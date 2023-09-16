@@ -1,7 +1,7 @@
 import {ServerRoute } from "@hapi/hapi";
 import authenticateJWT from "../middleware/jwtMiddleware";
-import Joi, { string } from "joi";
-import { addReview, bookHotel, cancelBooking, deleteHotel, deleteReview, filterHotel, getAllHotel, getHotelReviewsWithUserNames, gethotelDetail, updateHotel, uploadHotel, uploadImage, viewAllMyReviews, viewAllbookings, viewbookings } from "../controller/hotel.controller";
+import Joi from "joi";
+import { addReview, bookHotel, cancelBooking, chatBot, deleteHotel, deleteReview, filterHotel, getAllHotel, getHotelReviewsWithUserNames, gethotelDetail, hotelBooking, updateHotel, uploadHotel, uploadImage, viewAllMyReviews, viewAllbookings, viewbookings } from "../controller/hotel.controller";
 import { session } from "../middleware/session";
 
 
@@ -185,6 +185,21 @@ export const Hotelroutes: ServerRoute[] = [
     },
   },
 
+  {
+    method: 'POST',
+    path: '/hotelBooking',
+    options:{
+      tags: ['api',"hotel"],   
+      description: 'hotel booking',
+      pre: [{method: authenticateJWT},{method:session}],
+      validate:{
+        payload:Joi.object({check_in_date:Joi.string(), check_out_date:Joi.string()}),
+        query:Joi.object({hotel_id: Joi.string(),})
+      },
+    handler:hotelBooking
+  },
+},
+
 
 
     {
@@ -291,6 +306,18 @@ export const Hotelroutes: ServerRoute[] = [
        },
       handler:viewAllMyReviews
     },
+
+    {
+      method: 'GET',
+      path: '/chatBot',
+      options:{
+        tags: ['api',"hotel"],   
+        description: 'solve users Queries by chatbot',
+        validate:{query:Joi.object({query: Joi.string()})}
+       },
+      handler:chatBot
+    },
+
 
 
 

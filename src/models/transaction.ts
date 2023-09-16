@@ -2,22 +2,28 @@
 import { Schema } from "mongoose";
 import mongoose, { ObjectId ,Document} from "mongoose";
 import { ENUMS } from "../common/common";
+import { number, string } from "joi";
 
 export interface ITransaction extends Document {
 
-    credit:ObjectId;
-    debit:ObjectId;
+    credit:number;
+    debit:number;
     bookingId:ObjectId;
-    amount:number;
-    status:number
+    createdAt:Date;
+    status:string;
+    paymentIntent:string;
+    ownerId:ObjectId;
+
 }
 
 const transactionSchema = new mongoose.Schema({
-    credit:{ type: mongoose.Schema.Types.ObjectId, ref: 'User',require:true},
-    debit:{ type: mongoose.Schema.Types.ObjectId, ref: 'User',require:true},
+    ownerId:{ type: mongoose.Schema.Types.ObjectId, ref: 'User',require:true},
+    debit:{type:Number},
     bookingId:{ type: mongoose.Schema.Types.ObjectId, ref: 'Booking',require:true},
-    amount:{type:Number,require:true},
-    status:{type: Schema.Types.Number,enum: Object.values(ENUMS.TRANSACTION_STATUS),}
+    credit:{type:Number,require:true},
+    status:{type:String},
+    paymentIntent:{type:String,require:true},
+    createdAt:{type:Date,default:Date.now()}
 })
 const Transaction = mongoose.model<ITransaction>('transactions',transactionSchema);
 export default Transaction;

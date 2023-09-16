@@ -1,10 +1,8 @@
 import {ServerRoute } from "@hapi/hapi";
 
 import { adminForgotPassword, adminLogin ,adminPaswordChange,adminResetPassword,deletePost, verifyOwner} from "../controller/adminController"
-import authenticateJWT, { adminJwtMiddlware } from "../middleware/jwtMiddleware";
+import { adminJwtMiddlware } from "../middleware/jwtMiddleware";
 import Joi from "joi";
-import { forgotPassword } from "../controller/authController";
-
 
 
 
@@ -21,7 +19,10 @@ export const Adminroutes: ServerRoute[] = [
                 payload: Joi.object({
                     email: Joi.string().email().required(),
                     password: Joi.string().required(),
-                })
+                }),
+                failAction:async(request,h,err)=>{
+                    throw err;
+                }
             }
 
         },
@@ -51,7 +52,6 @@ export const Adminroutes: ServerRoute[] = [
             method: 'DELETE',
             path: '/deletePost',
             options: {
-                // auth: 'jwt'
                 tags: ['api',"admin"],   
                 description: 'delete hotel post',
                 pre: [{method: adminJwtMiddlware}]
@@ -63,11 +63,13 @@ export const Adminroutes: ServerRoute[] = [
         method: 'POST',
         path: '/adminForgetPassword',
         options: {
-            // auth: 'jwt'
             tags: ['api',"admin"],   
             description: 'forget password',
             validate:{
-                payload:Joi.object({email:Joi.string().email()})
+                payload:Joi.object({email:Joi.string().email()}),
+                failAction:async(request,h,err)=>{
+                    throw err;
+                }
    
         },
         handler: adminForgotPassword
@@ -86,7 +88,10 @@ export const Adminroutes: ServerRoute[] = [
                     email:Joi.string().email().required(),
                     otp:Joi.string().required(),
                     newPassword:Joi.string().required()
-                })
+                }),
+                failAction:async(request,h,err)=>{
+                    throw err;
+                }
    
         },
         handler: adminResetPassword
@@ -106,7 +111,10 @@ export const Adminroutes: ServerRoute[] = [
                     // email:Joi.string().email().required(),
                     // otp:Joi.string().required(),
                     newPassword:Joi.string().required()
-                })
+                }),
+                failAction:async(request,h,err)=>{
+                    throw err;
+                }
    
         },
         handler: adminPaswordChange

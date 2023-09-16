@@ -1,7 +1,8 @@
 import { ServerRoute } from "@hapi/hapi";
 import Joi from "joi";
-import { signup, login, logout, forgotPassword, resetPassword } from "../controller/authController";
+import { signup, login, logout, forgotPassword, resetPassword, googleSignup, googleCallback } from "../controller/authController";
 import authenticateJWT from "../middleware/jwtMiddleware";
+import { request } from "http";
 
 
 
@@ -21,11 +22,14 @@ export const Authroutes: ServerRoute[] = [
             payload: Joi.object({
                 name: Joi.string().min(3).max(140),
                 email: Joi.string().email().required(),
-                password: Joi.string().required(),
+                password: Joi.string().regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+])[A-Za-z0-9!@#$%^&*()_+]{8,}$/).required(),
                 phone: Joi.number().required(),
                 userType:Joi.number()
 
-            })
+            }),
+            failAction:async(request,h,err)=>{
+                throw err;
+            }
         }
     }
     },
@@ -41,8 +45,11 @@ export const Authroutes: ServerRoute[] = [
             validate: {
                 payload: Joi.object({
                     email: Joi.string().email().required(),
-                    password: Joi.string().required(),
-                })
+                    password: Joi.string().regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+])[A-Za-z0-9!@#$%^&*()_+]{8,}$/).required(),
+                }),
+                failAction:async(request,h,err)=>{
+                    throw err;
+                }
             }
         }
     },
@@ -69,9 +76,11 @@ export const Authroutes: ServerRoute[] = [
             description: 'forgotPassword',
             validate: {
                 payload: Joi.object({
-                    email: Joi.string().email().required(),
-                    // password: Joi.string().required(),
-                })
+                email: Joi.string().email().required(),
+                }),
+                failAction:async(request,h,err)=>{
+                    throw err;
+                }
             }
         }
     },
@@ -88,10 +97,32 @@ export const Authroutes: ServerRoute[] = [
             validate: {
                 payload: Joi.object({
                     otp: Joi.number().required(),
-                    email: Joi.string().required(),
-                    newPassword:Joi.string().required()
-                })
+                    email: Joi.string().email().required(),
+                    password: Joi.string().regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+])[A-Za-z0-9!@#$%^&*()_+]{8,}$/).required(),
+                }),
+                failAction:async(request,h,err)=>{
+                    throw err;
+                }
             }
         }
     },
+
+
+
+    {
+        method:'GET',
+        path:'/',
+        handler:googleSignup
+
+    },
+
+    {
+        method:'GET',
+        path:'/auth/google/callback',
+        handler:googleCallback
+    }
+
+
+
+    
 ]

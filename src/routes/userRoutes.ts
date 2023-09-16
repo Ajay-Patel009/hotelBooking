@@ -1,6 +1,6 @@
 import { ServerRoute } from "@hapi/hapi";
 import Joi from 'joi'
-import { changePassword, contactOwner, deleteProfile, getUser, updateProfile, viewtransaction } from "../controller/userController";
+import { changePassword, contactOwner, deleteProfile, getUser, updateProfile,} from "../controller/userController";
 import authenticateJWT from "../middleware/jwtMiddleware";
 import { session } from "../middleware/session";
 
@@ -47,7 +47,7 @@ export const user_routes: ServerRoute[] = [
             validate:{
                 payload:Joi.object({
                     name:Joi.string().optional(),
-                    phone:Joi.number().optional(),
+                    phone:Joi.number().optional().min(10).max(10),
                 }).optional()
             }
             
@@ -65,10 +65,13 @@ export const user_routes: ServerRoute[] = [
             pre: [{method: authenticateJWT},{method:session}],
             validate:{
                 payload:Joi.object({
-                    currentPassword:Joi.string().optional(),
-                    newPassword:Joi.string().optional(),
-                    confirmPassword:Joi.string().optional(),
-                })
+                    currentPassword:Joi.string().regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+])[A-Za-z0-9!@#$%^&*()_+]{8,}$/).required(),
+                    newPassword:Joi.string().regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+])[A-Za-z0-9!@#$%^&*()_+]{8,}$/).required(),
+                    confirmPassword:Joi.string().regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+])[A-Za-z0-9!@#$%^&*()_+]{8,}$/).required(),
+                }),
+                failAction:async(request,h,err)=>{
+                    throw err;
+                }
             }
             
             }
@@ -94,23 +97,6 @@ export const user_routes: ServerRoute[] = [
     ,},
 
 
-    {
-        method:'GET',
-        path: '/viewTransaction',
-        handler :viewtransaction,
-        options: {
-            pre: [{method: authenticateJWT},{method:session}],
-            tags: ['api','user'],   
-            description: 'view all transaction',
-            // validate:{
-            //     query:Joi.object({
-            //         hotel_id:Joi.string(),
-
-            //     })
-            // }
-            
-            }
-    ,}
 
 
 

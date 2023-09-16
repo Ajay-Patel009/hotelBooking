@@ -12,6 +12,12 @@ import { USERMSG } from "../common/userResponse";
 
 
 export class user_service{
+
+    static async checkUserExist(payload:any){
+            return await User.findOne(payload)
+    }
+
+
     static async getUser(userId:string)
     {
         const user=await User.findById({_id:userId})

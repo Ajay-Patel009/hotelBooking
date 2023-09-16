@@ -18,14 +18,14 @@ client.connect()
 
 
 export class signup_service {
-    // signup for agent
+
     static async user_signup(name: string, email: string, password: string, phone: string, userType: number) {
 
             if (!userType) { userType = 1 }
-            const user = await User.findOne({ email });
-            if (user) {
-                throw Boom.conflict(USERMSG.USER_EMAIL_ALREADY)
-            }
+            // const user = await User.findOne({ email });
+            // if (user) {
+            //     throw Boom.conflict(USERMSG.USER_EMAIL_ALREADY)
+            // }
             const hashedPassword = await bcrypt.hash(password, 10);
             if (userType == 2) {
                 const newUser = new User({
@@ -53,11 +53,42 @@ export class signup_service {
             }
 
         }
+
+        static async google_signup(email:string,name:string){
+            const userExist=await User.findOne({email:email});
+            if(userExist)
+            {
+                const token = jwt.sign({ userId:userExist._id, type:"user" }, SECRET_KEY as Secret);
+                await client.hSet(userExist._id.toString(), {
+                    email: email,
+                    status: 'active',
+                    deviceId: 'apple_988',
+                    IP_Address: "8R5tbf87d6gnf7UHD"
+                  })
+                return {token,message:"Google sign-In Successful"};
+            }
+            else{
+                const newUser=new User({
+                    name:name,
+                    email:email,
+                    userType:1
+                })
+                await newUser.save();
+                const token = jwt.sign({ userId: newUser._id, type: "user" }, SECRET_KEY as Secret)
+                return {message:"Google sign-Up Successful",token};
+
+            }
+        }
        
     }
 
 
     export class login_service {
+       
+
+         
+
+
        static async UserloginService(email: string, password: string) {
             const user = await User.findOne({ email });
             if (!user)
@@ -79,14 +110,11 @@ export class signup_service {
 
     export class password_reset_service {
         static async forgotPassword(email:string){
-            const user = await User.findOne({ email: email });
-            if (!user) {
-              return 0;
-            }
             let OTP = Math.floor(1000 + Math.random() * 9000);
             const options:SetOptions={EX:100};
             client.set(email, OTP, options);
             await sendGmail(email,"password reset",OTP,OTPTemplate)
+            return 1;
         }
 
 

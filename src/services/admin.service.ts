@@ -38,22 +38,17 @@ export class admin_service{
     {
         const isAdmin= await Admin.findOne({email:email});
         console.log(isAdmin)
-        
-        
         if(isAdmin)
         {
             const isPassword = await bcrypt.compare(password, isAdmin.password);
             if(isPassword)
             {
                 const token= jwt.sign({ userId: isAdmin._id,type:"admin"}, SECRET_KEY as Secret);
-                // return h.response({Message:"Login Successfull",token});
-                // console.log()
                 return [token,HTTP.SUCCESS];
             }
             else{
                 return [{},HTTP.NOT_FOUND]
             }
-           
         }
        
     }
@@ -68,8 +63,7 @@ export class admin_service{
         }
         else{
             return false;
-            }
-   
+        }
     }
 
     static async verify_owner(ownerId:string){
@@ -79,7 +73,6 @@ export class admin_service{
         if (!ownerExist) {
             return { message: 'owner not found',status:HTTP.NOT_FOUND};
         }
-
         if (ownerExist.isVerified) {
             return { message: 'owner is already Verified',status:HTTP.CONFLICT };
         } else {
@@ -145,6 +138,4 @@ export class admin_service{
         await Admin.findByIdAndUpdate({_id:adminId},{$set:{password:hashedPassword}})
         return "Password changed";
     }
-
-   
 }

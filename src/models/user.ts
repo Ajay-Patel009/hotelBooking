@@ -7,7 +7,6 @@ export interface IUser extends Document {
     email: string;
     password: string;
     phone:Number;
-    contact_no : number;
     userType:number;
     isVerified:boolean
     booking:{
@@ -24,8 +23,8 @@ export interface IUser extends Document {
 export const UserSchema = new mongoose.Schema({
     name:{type:String,require:true},
     email:{type:String,require:true},
-    password:{type:String,require:true},
-    phone:{type:Number,require:true},
+    password:{type:String},
+    phone:{type:Number},
     userType:{type: Schema.Types.Number,enum: Object.values(ENUMS.USER_TYPE)},
     isVerified:{type:Boolean},
     booking:[{

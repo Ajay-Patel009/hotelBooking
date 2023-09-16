@@ -90,8 +90,8 @@ export async function adminResetPassword(request: Request, h: ResponseToolkit) {
   } 
     const { email, otp, newPassword } = payload;
     console.log(email)
-    const o = await admin_service.password_reset(email,otp, newPassword);
-    return h.response({ message: o }).code(HTTP.SUCCESS);
+    const passwordReset = await admin_service.password_reset(email,otp, newPassword);
+    return h.response({ message: passwordReset }).code(HTTP.SUCCESS);
 }
 catch(err)
 {

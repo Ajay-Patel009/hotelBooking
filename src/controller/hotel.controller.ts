@@ -9,8 +9,10 @@ import amqp from 'amqplib';
 import { HOTELMSG } from "../common/hotelResponses";
 import Transaction from "../models/transaction";
 import { HTTP } from "../common/codeResponses";
-import { ENUMS } from "../common/common";
 import mongoose from "mongoose";
+import { classifier } from "../bot/bot.training";
+const stripe = require('stripe')('sk_test_51NpnFqSDai0wLS7KMsQefprvlODc5hLdMRmdln5TdDKxBz6PnqXeBMoIVLeLDDVB5Xu2HVHHIaVqwdf6laQvLxRT00hu4x82QT');
+
 
 
 
@@ -21,14 +23,13 @@ export async function uploadHotel(request:Hapi.Request, h:Hapi.ResponseToolkit) 
   try{
     const id=request.headers.userId
     const owner_id=id.userId
-    // const requestBody = <any>request.payload;
     const requestBody = request.payload as typeof hotelSchema;
     await hotel_service.uploadHotel(owner_id,requestBody);
     return h
           .response({
             Message:HOTELMSG.HOTEL_DETAIL_UPDATED
           }).code(200)
-        } 
+ } 
     catch(err)
     {
         console.log(err)
@@ -41,9 +42,7 @@ export async function deleteHotel(request:Hapi.Request, h:Hapi.ResponseToolkit) 
 
     const id=request.headers.userId
     const owner_id=id.userId
-    // const housing_id=<any>request.query.id;
     const housing_id: string = request.query.id as string;
-
     const bool=await hotel_service.deleteHotel(housing_id,owner_id)
     if(bool)
     {
@@ -110,8 +109,7 @@ export async function filterHotel(request:Hapi.Request, h:Hapi.ResponseToolkit) 
      const price= request.query.price;
      const type=request.query.type; 
      const city=request.query.city;
-    //  const minDistance=request.query.minDistance;
-    //  const maxDistance=request.query.maxDistance;
+
      var data;
  
      
@@ -136,21 +134,7 @@ export async function filterHotel(request:Hapi.Request, h:Hapi.ResponseToolkit) 
      {
         data=await Room.find({price:{$lte:price},type:type,"address.city":city});
      }
-    //  if(minDistance &&maxDistance)
-    //  {
-    //     data=await Room.find(
-    //         {
-    //           "address.location":
-    //             { $near:
-    //                {
-    //                  $geometry: { type: "Point",  coordinates: [ -73.9667, 40.78 ] },
-    //                  $minDistance: minDistance,
-    //                  $maxDistance: maxDistance
-    //                }
-    //             }
-    //         }
-    //      )
-    // }
+
      if(!data)
      {
         {
@@ -212,11 +196,7 @@ export async function bookHotel(request:Hapi.Request, h:Hapi.ResponseToolkit) {
         
         if (user) 
         {
-            // const isAlreadyBooked = user.booking.some(booking => booking.room_id.toString() === hotel_id);
-
-            // if (isAlreadyBooked) {
-            //     return h.response('Hotel is already booked by the you').code(400);
-            // }
+           
             
             const newBooking:any = {
                 room_id: hotel_id,
@@ -254,67 +234,43 @@ export async function bookHotel(request:Hapi.Request, h:Hapi.ResponseToolkit) {
     }
 
 
-
-    // export async function cancelBooking(request:Hapi.Request, h:Hapi.ResponseToolkit) {
-    //     try {
-
-    //         const uid=request.headers.userId
-    //         const hotel_idToDelete=request.query.hotel_id;
-    //         const booking_id=request.query.booking_id;
-    //         const user = await User.findById(uid.userId);
-    
-    //         if (user) {
-    //             const bookingIndex = user.booking.findIndex(booking => booking._id.toString()===booking_id);
-    
-    //             if (bookingIndex !== -1) {
-    //                 user.booking.splice(bookingIndex, 1);
-    //                 await user.save();
-    //                 return h.response(HOTELMSG.BOOKING_CANCELLED).code(HTTP.SUCCESS);
-    //             } else {
-    //                 return h.response(HOTELMSG.BOOKING_NOT_FOUND).code(HTTP.SUCCESS);
-    //             }
-    //         } else {
-    //             return h.response(USERMSG.USER_NOT_EXIST).code(404);
-    //         }
-    //     } catch (error) {
-    
-    //         return h.response(HOTELMSG.ERROR).code(500);
-    //     }
-    // } 
-
-
     export async function cancelBooking(request: Hapi.Request, h: Hapi.ResponseToolkit) {
         try {
             const uid = request.headers.userId;
-            const hotel_idToDelete = request.query.hotel_id;
             const booking_id = request.query.booking_id;
             const user = await User.findById(uid.userId);
             const b=new mongoose.Types.ObjectId(booking_id)
-            const book=await Transaction.find({bookingId:b})
-            console.log(book)
-            // console.log(user)
-            
-    
-            if (user) {
+            const transaction=await Transaction.findOne({bookingId:b});
+            if(!transaction){
+                return h.response("no bookings found for this hotel")
+            }
+            const paymentIntentId=transaction.paymentIntent;
+            const refund = await stripe.refunds.create({
+                  payment_intent: paymentIntentId,
+                  metadata:{
+                    bookingId:booking_id,
+                    ownerId:(transaction.ownerId).toString()
+                  }
+                });
+                console.log(refund);
+                if (user) {
                 const bookingIndex = user.booking.findIndex(booking => booking._id.toString() === booking_id);
                 console.log(bookingIndex)
                 if (bookingIndex !== -1) {
-                    // Create a transaction for debiting the user's account
-                    // const booking = user.booking[bookingIndex];
-                    const specificTransaction = book[bookingIndex-1];
-                    console.log(specificTransaction)
-                    const amountToDebit =23000; // Implement this function
-                    console.log(specificTransaction.debit,"ttttttttttttt")
-                    const transaction = new Transaction({
-                        credit: specificTransaction.debit,
-                        debit: specificTransaction.credit, // You may need to adjust this depending on your schema
-                        bookingId: specificTransaction.bookingId,
-                        amount: specificTransaction.amount,
+                    const newtransaction = new Transaction({
+                        
+                        debit:refund.amount, 
+                        bookingId:booking_id,
+                        ownerId:(transaction.ownerId).toString(),
+                        status:refund.status,
+                        paymentIntent:refund.payment_intent
+                        
                       
                     });
+            
     
                     // Save the transaction
-                    await transaction.save();
+                    await newtransaction.save();
     
                     // Remove the booking
                     user.booking.splice(bookingIndex, 1);
@@ -460,7 +416,30 @@ export async function viewAllMyReviews(request:Hapi.Request, h:Hapi.ResponseTool
     }
 }
 
-//ajay kunar 
+export async function chatBot(request:Hapi.Request, h:Hapi.ResponseToolkit) {
+    const userInput:any = request.query.query; // Get user input from the request payload
+          const response = classifier.classify(userInput); // Use the NLP model to generate a response
+          return h.response({ response });
+    
+}
+
+
+
+
+export async function hotelBooking(request:Hapi.Request, h:Hapi.ResponseToolkit) {
+    const uid=request.headers.userId;
+    const hotel_id=request.query.hotel_id;
+    const {check_in_date,check_out_date}=<any>request.payload;
+    try {
+
+    const re=await hotel_booking_service.book_hotel(uid.userId,hotel_id,check_in_date,check_out_date)
+    return re;
+  
+    } catch (error) {
+        console.error(error);
+        return h.response("err").code(500);
+      }
+    }
 
 
 
