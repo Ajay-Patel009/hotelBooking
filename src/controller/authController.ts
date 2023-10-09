@@ -2,12 +2,19 @@ import Hapi from '@hapi/hapi'
 import { Request, ResponseToolkit } from "@hapi/hapi";
 import { createClient} from "redis";
 import * as dotenv from "dotenv";
-import {USERMSG} from "../common/userResponse";
+import {USERRESPONSE} from "../common/userResponse";
 import { login_service, password_reset_service, signup_service } from "../services/auth.service";
 import { OAuth2Client } from 'google-auth-library';
-import { ResponseUtil } from '../middleware/response';
 import { user_service } from '../services/user.service';
-import User from '../models/user';
+import {httpResponse} from '../middleware/response';
+import User, { Userstatus } from '../models/user';
+import { LINK } from '../common/common';
+import { generateRandomPassword } from '../utils/passwodGen';
+import { v4 as uuidv4 } from 'uuid';
+
+
+const httpresponse=new httpResponse()
+
 
 
 const client = createClient();
@@ -15,24 +22,26 @@ client.on('error', err => console.log('Redis Client ERR', err))
 client.connect();
 
 dotenv.config();
-const PORT = process.env.PORT;
-const SECRET_KEY=process.env.SECRET_KEY
+
+const CLIENT_ID=process.env.GOOGLE_CLIENT_ID;
+const SECRET_CODE=process.env.GOOGLE_SECRET_ID;
+
+
+
+
 
 export async function signup(request: Request, h: ResponseToolkit) {
   try {
     var { name, email, password, phone ,userType } = <any>request.payload;
     const userExist=await user_service.checkUserExist({email:email});
-    if(userExist){
-      return ResponseUtil.conflict(USERMSG.USER_EMAIL_ALREADY,h)
-    }
+    if(userExist?.status==Userstatus.active) return httpresponse.sendResponse(h,USERRESPONSE.USER_EXIST);
     const new_user=await signup_service.user_signup(name, email, password, phone ,userType)
-    
-    if (new_user) {
-      return ResponseUtil.success(USERMSG.USER_REGISTER,h)
-    }
+    if(new_user) return httpresponse.sendResponse(h,USERRESPONSE.USER_REGISTERED);
+  
   } catch (error) {
     console.error(error);
-    return ResponseUtil.error(USERMSG.ERROR,h)
+    return httpresponse.sendResponse(h,USERRESPONSE.ERROR);
+
   }
 }
 
@@ -40,19 +49,22 @@ export async function signup(request: Request, h: ResponseToolkit) {
 export async function login(Request: Request, h: ResponseToolkit) {
   try {
     const { email, password } = <any>Request.payload;
-    const token = await login_service.UserloginService(email,password);
-    if(token==0)
-    {
-      return ResponseUtil.unauthorized(USERMSG.USER_NOT_EXIST,h)
-    }
-    else{
-      return ResponseUtil.success(token,h)
-    }
-  }
-  catch (error) {
-    return ResponseUtil.error(USERMSG.ERROR,h);
-  
-  }
+    const user=await user_service.checkUserExist({email:email});
+
+    if(user?.status==Userstatus.deleted) return httpresponse.sendResponse(h,USERRESPONSE.USER_NOT_EXIST)
+    if(!user) return httpresponse.sendResponse(h,USERRESPONSE.USER_NOT_EXIST);
+    if(user?.status==Userstatus.blocked) return httpresponse.sendResponse(h,USERRESPONSE.USER_BLOCKED);
+    const clientIP = Request.info.remoteAddress;
+    const deviceId = Request.headers['x-device-id'] as string;
+    console.log(deviceId);
+    const token = await login_service.UserloginService(email,password,clientIP,deviceId);
+    if(token==0)return httpresponse.sendResponse(h,USERRESPONSE.WRONG_PASSWORD);
+    return httpresponse.sendResponse(h,USERRESPONSE.USER_LOGIN,token);
+   }
+  catch (error){
+    console.log(error);
+    return httpresponse.sendResponse(h,USERRESPONSE.ERROR);
+ }
 }
 
 
@@ -63,26 +75,32 @@ export async function login(Request: Request, h: ResponseToolkit) {
 export async function logout(request:Hapi.Request, h:Hapi.ResponseToolkit) {
   try{
      const uid=request.headers.userId
+     const user=await user_service.checkUserExist({_id:uid.userId, status:{$ne:Userstatus.deleted}});
+     if(!user) return;
+     user.status=Userstatus.inactive;
+     await user.save();
      if(uid)
      {
       await client.del(uid.userId.toString());
-      return ResponseUtil.success(USERMSG.USER_LOGOUT,h)
+      return httpresponse.sendResponse(h,USERRESPONSE.LOGOUT);
      }
   }
-    catch(err){return ResponseUtil.error(USERMSG.ERROR,h)}
+    catch(err){return httpresponse.sendResponse(h,USERRESPONSE.ERROR)}
 }
+
+
 
 
 export async function forgotPassword(Request: Request, h: ResponseToolkit) {
   try {
     const { email } = <any>Request.payload;
     const userExist=await user_service.checkUserExist({email:email});
-    if(!userExist)return ResponseUtil.notFound(USERMSG.EMAIL_NOT_REGISTERED,h)
+    if(!userExist)return httpresponse.sendResponse(h,USERRESPONSE.USER_NOT_EXIST);
     const status=await password_reset_service.forgotPassword(email);
-    if(status==1)return ResponseUtil.success(USERMSG.OTP_SEND,h)
+    if(status==1)return httpresponse.sendResponse(h,USERRESPONSE.OTP_SEND);
 }
   catch (error) {
-    return ResponseUtil.error(USERMSG.ERROR,h);
+    return httpresponse.sendResponse(h,USERRESPONSE.ERROR);
   }
 }
 
@@ -93,13 +111,11 @@ export async function resetPassword(Request: Request, h: ResponseToolkit) {
   try{
   const { email, otp, password } = <any>Request.payload;
   await password_reset_service.passwordReset(email,otp,password);
-  return ResponseUtil.success(USERMSG.RESET_PASSWORD,h)
+  return httpresponse.sendResponse(h,USERRESPONSE.PASSWORD_CHANGED);
 }
 
-catch(err)
-{
-  console.log(err);
-  return ResponseUtil.error(USERMSG.ERROR,h)
+catch(err){
+  return httpresponse.sendResponse(h,USERRESPONSE.ERROR);
 }
 }
 
@@ -107,9 +123,9 @@ catch(err)
 
 
 const oauthClient = new OAuth2Client({
-        clientId: '837797227987-84oj9j09cfmv794ekggk1tedp7cbt8i2.apps.googleusercontent.com',
-        clientSecret: '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',
-        redirectUri: 'http://localhost:3000/auth/google/callback'
+        clientId:CLIENT_ID,
+        clientSecret:SECRET_CODE,
+        redirectUri:LINK.GOOGLE_REDIRECT_URL,
       });
     
     export async function googleSignup(Request: Request, h: ResponseToolkit) {
@@ -136,17 +152,15 @@ const oauthClient = new OAuth2Client({
           const ticket:any=await oauthClient.verifyIdToken(
             {
             idToken:tokens.id_token as string,
-            audience: '837797227987-84oj9j09cfmv794ekggk1tedp7cbt8i2.apps.googleusercontent.com'
-        
-            })
-            console.log(ticket)
-
+            audience: CLIENT_ID
+          })
             const {name,email}=ticket.getPayload();
-            const payload=ticket.getPayload()
+            const payload=ticket.getPayload();
             console.log(payload);
-            console.log(name,email)
             oauthClient.revokeToken(tokens.access_token as string);
-            const creatUser=await signup_service.google_signup(email,name);
+            const password=generateRandomPassword(10);
+            const creatUser=await signup_service.google_signup(email,name,password);
+         
             return creatUser;
         }
     

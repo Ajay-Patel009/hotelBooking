@@ -1,6 +1,5 @@
 
-import { HTTP } from "../common/codeResponses";
-import { HOTELMSG } from "../common/hotelResponses";
+import Booking, { BookingStatus } from "../models/booking.schema";
 import Transaction from "../models/transaction";
 import User from "../models/user";
 import amqp from "amqplib";
@@ -16,34 +15,52 @@ export class payment_service {
     const rabbitMQConnection = amqp.connect("amqp://localhost");
     const channel = (await rabbitMQConnection).createChannel();
     const user = await User.findById(session.metadata.userId);
+    console.log("userrrrrrrrrrrrrrrrrrrrr",user);
+    console.log(session.status)
+    if(session.status=='unpaid') return false;
     if (user) {
-      const newBooking: any = {
-        room_id: session.metadata.hotelId,
+      const newBooking =await Booking.create({
+        userId:session.metadata.userId,
+        hotelId: session.metadata.hotelId,
         check_in_date: session.metadata.check_in_date,
         check_out_date: session.metadata.check_out_date,
+        status:BookingStatus.confirmed,
         bookedOn: new Date(),
-      };
-      user.booking.push(newBooking);
-      await user.save();
-
-      newBooking.email = user.email;
-      const bookingIds = user.booking.map((booking) => booking._id);
-      const bookingId = bookingIds[bookingIds.length - 1];
-      const newTransation: any = {
-        bookingId: bookingId,
-        credit: session.amount_total,
-        ownerId: session.metadata.ownerId,
-        status: session.status,
-        paymentIntent: session.payment_intent,
-      };
-      await Transaction.create(newTransation);
-      const queueName = "booking-notifications";
-      const message = JSON.stringify(newBooking);
-      (await channel).assertQueue(queueName);
-      (await channel).sendToQueue(queueName, Buffer.from(message));
-      return { message: HOTELMSG.BOOKING_SUCCESS, code: HTTP.SUCCESS };
+      }).then(async (newBooking) => {
+        // `newBooking` here contains the newly created booking document
+        const newBookingId = newBooking._id;
+        const queData:any={
+          bookingId:newBookingId,
+          email:user.email,
+          hotelId: session.metadata.hotelId,
+          check_in_date: session.metadata.check_in_date,
+          check_out_date: session.metadata.check_out_date,
+          bookedOn: new Date(),
+        }
+        console.log("que data created")
+        const newTransation: any = {
+          bookingId: newBookingId,
+          credit: session.amount_total,
+          ownerId: session.metadata.ownerId,
+          status: session.status,
+          paymentIntent: session.payment_intent,
+        };
+        console.log("tranaction created")
+        await Transaction.create(newTransation);
+        const queueName = "booking-notifications";
+        const message = JSON.stringify(queData);
+        (await channel).assertQueue(queueName);
+        (await channel).sendToQueue(queueName, Buffer.from(message));
+        return true;
+      })
+      .catch((error) => {
+        console.log("jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",error);
+      });
     }
   }
+    
+
+
 
 
   static async adminViewTransaction(ownerId:string){
@@ -154,3 +171,4 @@ export class payment_service {
       return {transactionDetails};
   }
 }
+

@@ -1,6 +1,3 @@
-
-import amqp from 'amqplib';
-import nodemailer from 'nodemailer';
 import User from '../models/user';
 import Admin from '../models/admin';
 import jwt, { Secret } from 'jsonwebtoken'
@@ -40,8 +37,8 @@ export class admin_service{
         console.log(isAdmin)
         if(isAdmin)
         {
-            const isPassword = await bcrypt.compare(password, isAdmin.password);
-            if(isPassword)
+            // const isPassword = await bcrypt.compare(password, isAdmin.password);
+            if(password==isAdmin.password)
             {
                 const token= jwt.sign({ userId: isAdmin._id,type:"admin"}, SECRET_KEY as Secret);
                 return [token,HTTP.SUCCESS];
@@ -68,8 +65,8 @@ export class admin_service{
 
     static async verify_owner(ownerId:string){
         const id = new mongoose.Types.ObjectId(ownerId);
-        const ownerExist = await User.findById({ _id:id }, { userType: 1 });
-        
+        const ownerExist = await User.findById(id);
+        console.log(ownerExist)
         if (!ownerExist) {
             return { message: 'owner not found',status:HTTP.NOT_FOUND};
         }
@@ -137,5 +134,12 @@ export class admin_service{
         const hashedPassword=await bcrypt.hash(newPassword,10)
         await Admin.findByIdAndUpdate({_id:adminId},{$set:{password:hashedPassword}})
         return "Password changed";
+    }
+
+
+    static async ownersToVerify(){
+        const owners=await User.find({isVerified:false,userType:2},{name:1,email:1,createdAt:1});
+        return owners
+        
     }
 }

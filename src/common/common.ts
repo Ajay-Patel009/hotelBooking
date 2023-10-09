@@ -19,7 +19,10 @@ import Transaction from '../models/transaction';
   
 // }
 
+export const LINK={
 
+    GOOGLE_REDIRECT_URL:'http://localhost:3000/auth/google/callback'
+}
 
 
 export const GeoAddress = new Schema(

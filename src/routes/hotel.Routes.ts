@@ -1,7 +1,7 @@
 import {ServerRoute } from "@hapi/hapi";
 import authenticateJWT from "../middleware/jwtMiddleware";
 import Joi from "joi";
-import { addReview, bookHotel, cancelBooking, chatBot, deleteHotel, deleteReview, filterHotel, getAllHotel, getHotelReviewsWithUserNames, gethotelDetail, hotelBooking, updateHotel, uploadHotel, uploadImage, viewAllMyReviews, viewAllbookings, viewbookings } from "../controller/hotel.controller";
+import { addReview, cancelBooking, chatBot, deleteHotel, deleteReview, filterHotel, getAllHotel, getHotelReviewsWithUserNames, gethotelDetail, hotelBooking, searchHotels, searchit, updateHotel, uploadHotel, uploadImage, viewAllMyReviews, viewAllbookings, viewbookings } from "../controller/hotel.controller";
 import { session } from "../middleware/session";
 
 
@@ -17,7 +17,7 @@ export const Hotelroutes: ServerRoute[] = [
       options:{
         // auth:"jwt"
         tags: ['api',"hotel"],   
-        description: 'uploadHotel',
+        description: 'owners/hotelAdmin can upload Hotel',
          pre: [{method: authenticateJWT},{method:session}],
          validate:{
           payload:Joi.object({
@@ -55,7 +55,7 @@ export const Hotelroutes: ServerRoute[] = [
       path: '/deleteRoom',
       options:{
         tags: ['api',"hotel"],   
-        description: 'deleteHotel',
+        description: 'hotel owners/admins delete their Hotel from the application',
         pre: [{method: authenticateJWT},{method:session}],
         validate:{
             query:Joi.object({
@@ -67,6 +67,35 @@ export const Hotelroutes: ServerRoute[] = [
     },
       handler:deleteHotel
     },
+
+
+
+
+    {
+      method: 'GET',
+      path: '/searchHotels',
+      options:{
+        tags: ['api',"hotel"],   
+        description: 'users are able to search the hotels',
+      
+      },
+
+      handler:searchHotels
+    },
+
+    {
+      method: 'GET',
+      path: '/searchit',
+      options:{
+        tags: ['api',"hotel"],   
+        description: 'hotel owners/admins delete their Hotel from the application',
+      
+      },
+
+      handler:searchit
+    },
+
+
 
 
 
@@ -101,7 +130,7 @@ export const Hotelroutes: ServerRoute[] = [
       options:{
         auth:false,
         tags: ['api',"hotel"],   
-        description: 'filter hotel',
+        description: 'view list of hotels by applying filters',
         validate:{
           query:Joi.object({
            price: Joi.number(),
@@ -123,7 +152,7 @@ export const Hotelroutes: ServerRoute[] = [
       path: '/updateRoomDetails',
       options:{
         tags: ['api',"hotel"],   
-        description: 'updateHotel',
+        description: 'owners or hotel admin can update Hotel',
         pre: [{method: authenticateJWT},{method:session}],
         validate:{
           payload:Joi.object({
@@ -154,7 +183,7 @@ export const Hotelroutes: ServerRoute[] = [
       options:{
         auth:false,
         tags: ['api',"hotel"],   
-        description: 'show hotel deatails',
+        description: 'user can see  hotel deatails',
         validate:{
           query:Joi.object({
           
@@ -170,27 +199,27 @@ export const Hotelroutes: ServerRoute[] = [
 
 
 
-    {
-      method: 'POST',
-      path: '/bookHotel',
-      options:{
-        tags: ['api',"hotel"],   
-        description: 'hotel booking',
-        pre: [{method: authenticateJWT},{method:session}],
-        validate:{
-          payload:Joi.object({check_in_date:Joi.string(), check_out_date:Joi.string()}),
-          query:Joi.object({hotel_id: Joi.string(),})
-        },
-      handler:bookHotel
-    },
-  },
+  //   {
+  //     method: 'POST',
+  //     path: '/bookHotel',
+  //     options:{
+  //       tags: ['api',"hotel"],   
+  //       description: 'hotel booking',
+  //       pre: [{method: authenticateJWT},{method:session}],
+  //       validate:{
+  //         payload:Joi.object({check_in_date:Joi.string(), check_out_date:Joi.string()}),
+  //         query:Joi.object({hotel_id: Joi.string(),})
+  //       },
+  //     handler:bookHotel
+  //   },
+  // },
 
   {
     method: 'POST',
     path: '/hotelBooking',
     options:{
       tags: ['api',"hotel"],   
-      description: 'hotel booking',
+      description: 'user can perform hotel booking',
       pre: [{method: authenticateJWT},{method:session}],
       validate:{
         payload:Joi.object({check_in_date:Joi.string(), check_out_date:Joi.string()}),
@@ -207,7 +236,7 @@ export const Hotelroutes: ServerRoute[] = [
       path: '/cancelBookings',
       options:{
         tags: ['api',"hotel"],   
-        description: 'cancel booking',
+        description: 'user can cancel booking',
         pre: [{method: authenticateJWT},{method:session}],
         validate:{query:Joi.object({booking_id: Joi.string()})}
         },
@@ -221,7 +250,7 @@ export const Hotelroutes: ServerRoute[] = [
       path: '/viewMyBookings',
       options:{
         tags: ['api',"hotel"],   
-        description: 'view my bookings',
+        description: 'user can view thier bookings',
         pre: [{method: authenticateJWT}],
         validate:{query:Joi.object({hotel_id: Joi.string()})}
         },
@@ -235,7 +264,7 @@ export const Hotelroutes: ServerRoute[] = [
       path: '/viewAllBookings',
       options:{
         tags: ['api',"hotel"],   
-        description: 'view my hotel bookings',
+        description: 'owner can see list of all bookings on their  hotel',
         pre: [{method: authenticateJWT}],
         validate:{query:Joi.object({hotel_id: Joi.string()})}
         },
@@ -252,7 +281,7 @@ export const Hotelroutes: ServerRoute[] = [
       path: '/addReview',
       options:{
         tags: ['api',"hotel"],   
-        description: 'add review to hotel',
+        description: 'user can add review to hotel',
         pre: [{method: authenticateJWT},{method:session}],
         validate:{
           payload:Joi.object({rating:Joi.number(),text:Joi.string()}),
@@ -271,7 +300,7 @@ export const Hotelroutes: ServerRoute[] = [
       path: '/deleteReview',
       options:{
         tags: ['api',"hotel"],   
-        description: 'delete review to hotel',
+        description: 'user can delete review to hotel',
         pre: [{method: authenticateJWT},{method:session}],
         validate:{query:Joi.object({hotel_id: Joi.string()})}
         },
@@ -286,7 +315,7 @@ export const Hotelroutes: ServerRoute[] = [
       path: '/viewReview',
       options:{
         tags: ['api',"hotel"],   
-        description: 'view review of hotel',
+        description: 'view review of  hotel',
         // pre: [{method: authenticateJWT}]
         validate:{query:Joi.object({hotel_id: Joi.string()})}
        },
@@ -300,7 +329,7 @@ export const Hotelroutes: ServerRoute[] = [
       path: '/viewAllMyReviews',
       options:{
         tags: ['api',"hotel"],   
-        description: 'view review of hotel',
+        description: 'user can see all the reviews that he gave on the hotels',
         pre: [{method: authenticateJWT}]
         // validate:{query:Joi.object({hotel_id: Joi.string()})}
        },
@@ -364,7 +393,7 @@ export const Hotelroutes: ServerRoute[] = [
     },
   },
     
- 
+//thi i to indto ou thetwe arr going to
   
     
     

@@ -1,6 +1,18 @@
 import mongoose, { Document, ObjectId, Schema } from 'mongoose';
 import { ENUMS } from '../common/common';
-import { string } from 'joi';
+
+
+
+export enum Userstatus {
+    inactive,
+    active,
+    blocked,
+    deleted,
+  }
+export enum UserRole{
+  owner,
+  customer
+}
 
 export interface IUser extends Document {
     name: string;
@@ -8,15 +20,8 @@ export interface IUser extends Document {
     password: string;
     phone:Number;
     userType:number;
-    isVerified:boolean
-    booking:{
-        _id: any;
-        room_id:ObjectId,
-        bookedOn:Date,
-        check_in_date:string,
-        check_out_date:string,
-        
-    }[];
+    isVerified:boolean;
+    status:number;
     createdAt: Date;
   }
 
@@ -26,14 +31,8 @@ export const UserSchema = new mongoose.Schema({
     password:{type:String},
     phone:{type:Number},
     userType:{type: Schema.Types.Number,enum: Object.values(ENUMS.USER_TYPE)},
+    status:{type:Number},
     isVerified:{type:Boolean},
-    booking:[{
-        room_id:{type: mongoose.Schema.Types.ObjectId, ref: 'Hotel',require: true,},
-        bookedOn:{type: Date,default: Date.now},
-        check_in_date:{ type:String,require:true},
-        check_out_date:{ type:String,require:true}
-    }],
-    
     createdAt: { type: Date, default: Date.now }
 })
 const User = mongoose.model<IUser>('users',UserSchema);

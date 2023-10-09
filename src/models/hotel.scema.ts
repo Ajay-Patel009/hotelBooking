@@ -2,7 +2,11 @@ import mongoose, { Document, ObjectId, Schema } from 'mongoose';
 import { ENUMS} from '../common/common';
 import { IUser } from './user';
 
+export enum HotelStatus{
+  deleted,
+  active
 
+}
 
 export interface IHotel extends Document {
     name:string
@@ -10,6 +14,7 @@ export interface IHotel extends Document {
     type:number;
     description: string;
     price: number;
+    status:number;
     amenities:{
      swimming_pool:boolean,
       wifi:boolean,
@@ -59,6 +64,7 @@ export const hotelSchema = new mongoose.Schema({
     description: {type: String,required: true},
     type:{ type: Schema.Types.Number,enum: Object.values(ENUMS.HOTEL_TYPE),},
     price: {type: Number,required: true},
+    status:{type:Number,required:true},
     amenities: {
       swimmingPool:{type:Boolean},
       wifi:{type:Boolean},
@@ -99,4 +105,9 @@ export const hotelSchema = new mongoose.Schema({
   
   const Hotel = mongoose.model<IHotel>('hotels', hotelSchema);
   export default Hotel;
+  
+
+
+
+
   

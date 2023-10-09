@@ -60,6 +60,70 @@ export const OTPTemplate=(otp:number) => `
 `;
 
 
+
+
+export const loginCredentialTemplate=(data:any) => `
+
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f6f6f6;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        border-radius : 10px;
+        background-color: #3498db;
+        color: white;
+        padding: 10px;
+        text-align: center;
+      }
+      .content {
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .otp-box {
+        background-color: #f2f2f2;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 18px;
+        text-align: center;
+        margin-bottom: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Login Credentials</h1>
+      </div>
+      <div class="content">
+        <p>Hello there,</p>
+        <p>Thanks for the registering to our plateform.</p><br>
+        
+        <div class="otp-box">
+        <p>You can login by using these credentials.</p>
+           Email: ${data.email}<br>
+           Password: ${data.password}<br>
+        </div>
+        <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+      </div>
+    </div>
+  </body>
+</html>
+`;
+
+
+
 export const ownerDetailTemplate = (data:any) => `
 <html>
   <!-- Rest of your HTML template -->

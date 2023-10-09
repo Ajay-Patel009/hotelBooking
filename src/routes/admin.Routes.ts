@@ -1,6 +1,6 @@
 import {ServerRoute } from "@hapi/hapi";
 
-import { adminForgotPassword, adminLogin ,adminPaswordChange,adminResetPassword,deletePost, verifyOwner} from "../controller/adminController"
+import { adminForgotPassword, adminLogin ,adminPaswordChange,adminResetPassword,deletePost, ownersToVerify, verifyOwner} from "../controller/admin.Controller"
 import { adminJwtMiddlware } from "../middleware/jwtMiddleware";
 import Joi from "joi";
 
@@ -58,6 +58,17 @@ export const Adminroutes: ServerRoute[] = [
             },
             handler: deletePost
     },
+
+    {
+        method: 'GET',
+        path: '/notVerifiedOwners',
+        options: {
+            tags: ['api',"admin"],   
+            description: 'list of hotels that are not verified',
+            pre: [{method: adminJwtMiddlware}]
+        },
+        handler:ownersToVerify
+},
 
     {
         method: 'POST',

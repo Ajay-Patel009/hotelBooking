@@ -1,8 +1,5 @@
-
-import { Schema } from "mongoose";
 import mongoose, { ObjectId ,Document} from "mongoose";
-import { ENUMS } from "../common/common";
-import { number, string } from "joi";
+
 
 export interface ITransaction extends Document {
 

@@ -3,6 +3,7 @@ import Joi from "joi";
 import { signup, login, logout, forgotPassword, resetPassword, googleSignup, googleCallback } from "../controller/authController";
 import authenticateJWT from "../middleware/jwtMiddleware";
 import { request } from "http";
+import { session } from "../middleware/session";
 
 
 
@@ -62,7 +63,7 @@ export const Authroutes: ServerRoute[] = [
             // auth:'jwt',
             tags: ['api','userAuth'],   
             description: 'logout',
-            pre: [{method:authenticateJWT}]
+            pre: [{method:authenticateJWT},{method:session}]
         }
     },
 

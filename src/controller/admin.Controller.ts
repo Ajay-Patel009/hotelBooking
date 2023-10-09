@@ -2,13 +2,11 @@ import { Request, ResponseToolkit } from "@hapi/hapi";
 import dotenv from "dotenv";
 import { USERMSG } from "../common/userResponse";
 import Admin from "../models/admin";
-
 import { admin_service } from "../services/admin.service";
 import { HOTELMSG } from "../common/hotelResponses";
-import exp from "constants";
 import { HTTP } from "../common/codeResponses";
 import Boom from "boom";
-import { emit } from "process";
+
 
 dotenv.config();
 const PORT = process.env.PORT;
@@ -108,6 +106,19 @@ export async function adminPaswordChange(request: Request, h: ResponseToolkit) {
     console.log(adminId);
     const changePassword=await admin_service.changePasword(adminId.userId,newPassword)
     return h.response(changePassword)
+}
+
+
+export async function ownersToVerify(request: Request, h: ResponseToolkit) {
+  try{
+  const adminId=request.headers.userId;
+  const owners=await admin_service.ownersToVerify();
+  return h.response({not_verified:owners})
+  }
+  catch(err){
+    console.log(err)
+  }
+
 }
 
 

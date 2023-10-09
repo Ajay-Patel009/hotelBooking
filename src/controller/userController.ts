@@ -1,12 +1,12 @@
 import Hapi, {Request, ResponseToolkit } from '@hapi/hapi';
 import dotenv from "dotenv";
-import { USERMSG } from '../common/userResponse';
+import { USERMSG, USERRESPONSE } from '../common/userResponse';
 import { user_service } from '../services/user.service';
-import exp from 'constants';
-import User, { UserSchema } from '../models/user';
 import { HTTP } from '../common/codeResponses';
-import Transaction, { ITransaction } from '../models/transaction';
-import mongoose from 'mongoose';
+import { httpResponse } from '../middleware/response';
+import Boom from '@hapi/boom';
+import { Userstatus } from '../models/user';
+const httpresponse=new httpResponse()
 
 
 
@@ -19,64 +19,52 @@ const PlateformFee=process.env.PLATEFORM_FEE;
 export async function getUser(request:Request,h:ResponseToolkit) {
     try{
     const uid=request.headers.userId
-    const user=await user_service.getUser(uid.userId)
-    if(user)
-    {
-        return h.response({Details: user}).code(200);
-    }
-    else{
-        return h.response({Message:USERMSG.USER_NOT_EXIST})
-    }
+    const user=await user_service.checkUserExist({_id:uid.userId,status:Userstatus.active})
+    if(!user) return httpresponse.sendResponse(h,USERRESPONSE.USER_NOT_EXIST);
+    if(user) return httpresponse.sendResponse(h,USERRESPONSE.USER_PROFILE_DETAILS,user);
  }
- catch(err)
- {
+  catch(err)
+  {
     console.log(err);
+    return httpresponse.sendResponse(h,USERRESPONSE.ERROR);
+  }
 }
-}
+
+
+
 
  export async function deleteProfile(request:Hapi.Request, h:Hapi.ResponseToolkit) {
     try{
-
-    const uid=request.headers.userId
-    const deleted=await user_service.deleteUser(uid.userId)
-    if(deleted)
-    {
-        return h.response({Message:USERMSG.USER_DELETE});
-    }
-    else{
-        return h.response({Message:USERMSG.ERROR})
-    }
+        const uid=request.headers.userId
+        const deleted=await user_service.deleteUser(uid.userId)
+        if(deleted) return httpresponse.sendResponse(h,USERRESPONSE.USER_DELETE);
+        return httpresponse.sendResponse(h,USERRESPONSE.USER_NOT_EXIST);
 }
 catch(err)
-{
-    console.log(err);
+ {
+    console.log(err)
+    return httpresponse.sendResponse(h,USERRESPONSE.ERROR);
+ }
 }
-}
+
+
+
+
 
 export async function updateProfile(request:Hapi.Request, h:Hapi.ResponseToolkit) {
     try{
-    const uid=request.headers.userId
-    const requestBody=<any>request.payload
-
-    const [updated_data,status]=await user_service.updateUser(uid.userId,requestBody)
-   
-    if(updated_data)
-    {
-        return h.response({
-            Message: USERMSG.USER_UPDATED,
-            data:updated_data,
-            status:status
-    });
-    }
-    else{
-        return h.response({Message:USERMSG.USER_UPDATE_FAILED});
-    }
-    }
+        const uid=request.headers.userId
+        const requestBody=<any>request.payload
+        const updated_data=await user_service.updateUser(uid.userId,requestBody)
+        if(updated_data) return httpresponse.sendResponse(h,USERRESPONSE.USER_PROFILE_UPDATED,updated_data)
+       }
     catch(err)
     {
-        console.log(err);
+        return httpresponse.sendResponse(h,USERRESPONSE.ERROR)
     }
 }
+
+
 
 
 
@@ -84,14 +72,19 @@ export async function updateProfile(request:Hapi.Request, h:Hapi.ResponseToolkit
     try{
         const uid=request.headers.userId;
         const {currentPassword,newPassword,confirmPassword}=<any>request.payload;
-        const newchange=await user_service.updatePassword(uid.userId, currentPassword,newPassword,confirmPassword);
-        return h.response(newchange).code(201);
+        if(confirmPassword!=newPassword) return httpresponse.sendResponse(h,USERRESPONSE.PASSWORD_MISMATCH)
+        const update=await user_service.updatePassword(uid.userId, currentPassword,newPassword,confirmPassword);
+        if(update) return httpresponse.sendResponse(h,USERRESPONSE.PASSWORD_CHANGED)
+        return httpresponse.sendResponse(h,USERRESPONSE.WRONG_PASSWORD)
     }
     catch(err)
-    {
-        return h.response({err})
+    {   if(Boom.isBoom(err)) return h.response(err)
+        console.log(err)
+        return httpresponse.sendResponse(h,USERRESPONSE.ERROR)
     }
  }
+
+
 
 
 
@@ -103,7 +96,6 @@ export async function contactOwner(request:Hapi.Request, h:Hapi.ResponseToolkit)
         const hotel_id=request.query.hotel_id;
         const contact=await user_service.ownerContact(hotel_id,uid.userId);
         return h.response(contact);
-
         }
         catch(err)
         {

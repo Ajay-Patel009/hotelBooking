@@ -6,12 +6,16 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsc && node ./dist/index.js",
+    "start-qa": "tsc && env-cmd -f bin/.env.qa node ./dist/index.js",
+    "start-dev": "tsc && env-cmd -f bin/.env.dev  node ./dist/index.js",
+    "start-release": "tsc && env-cmd -f bin/.env.release  node ./dist/index.js",
     "start-consumer": "node ./dist/common/consumer.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@elastic/elasticsearch": "^8.9.0",
     "@hapi/bell": "^13.0.1",
     "@hapi/cookie": "^12.0.1",
     "@hapi/hapi": "^21.3.2",
@@ -24,6 +28,7 @@
     "bell": "^10.0.0",
     "boom": "^7.3.0",
     "dotenv": "^16.3.1",
+    "env-cmd": "^10.1.0",
     "google-auth-library": "^9.0.0",
     "googleapis": "^126.0.1",
     "hapi-auth-cookie": "^10.0.0",
@@ -57,6 +62,7 @@
     "@types/nes": "^7.0.9",
     "@types/nodemailer": "^6.4.9",
     "@types/pdfkit": "^0.12.10",
+    "@types/uuid": "^9.0.4",
     "@types/ws": "^8.5.5"
   }
 }

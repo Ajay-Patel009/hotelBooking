@@ -1,15 +1,12 @@
 import Hapi from '@hapi/hapi';
-import User from '../models/user';
-import Transaction from '../models/transaction';
-import { HTTP } from '../common/codeResponses';
-import { HOTELMSG } from '../common/hotelResponses';
-import amqp from 'amqplib';
-import { contactOwner } from './userController';
-import mongoose from 'mongoose';
 import { payment_service } from '../services/payment.service';
 import dotenv from 'dotenv';
-import { ResponseUtil } from '../middleware/response';
+import { USERRESPONSE } from '../common/userResponse';
 const stripe = require('stripe')('sk_test_51NpnFqSDai0wLS7KMsQefprvlODc5hLdMRmdln5TdDKxBz6PnqXeBMoIVLeLDDVB5Xu2HVHHIaVqwdf6laQvLxRT00hu4x82QT');
+import {httpResponse} from '../middleware/response';
+
+
+const httpresponse=new httpResponse()
 dotenv.config();
 const PlateformFee=Number(process.env.PLATEFORM_FEE);
 const TAX=Number(process.env.TAX);
@@ -63,8 +60,8 @@ export async function onsuccess(request:Hapi.Request, h: Hapi.ResponseToolkit){
   const{sessionId}=request.query;
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    const message=await payment_service.onSuccessPayment(session);
-    return message
+    await payment_service.onSuccessPayment(session);
+    return h.response("booking success")
   } catch (error) {
     console.error(error);
     return ('Error handling payment')
@@ -85,19 +82,17 @@ export async function allTransactions(request: Hapi.Request, h: Hapi.ResponseToo
       transactions=await payment_service.adminViewAllTransactions();
       return transactions;
     }
-    if(transactions){
-      return ResponseUtil.success(transactions,h);
-    }
+    if(transactions) return httpresponse.sendResponse(h,USERRESPONSE.USER_REGISTERED)
     else{
-      return ResponseUtil.notFound("no transaction found",h)
+      return httpresponse.sendResponse(h,USERRESPONSE.USER_REGISTERED);
     }
   
  } catch (err) {
     console.error(err);
-    // return h.response({ error: 'An error occurred while fetching transaction details' }).code(500);
-    return ResponseUtil.error("error",h)
+    return httpresponse.sendResponse(h,USERRESPONSE.ERROR);
   }
 }
+
 
 
 
@@ -107,10 +102,7 @@ export async function ViewMyTransactions(request: Hapi.Request, h: Hapi.Response
   
   const transaction=await payment_service.ownerViewTransaction(ownerId);
   return transaction;
-  
-
-
-}
+  }
 
 
 

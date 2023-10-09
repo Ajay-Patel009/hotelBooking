@@ -14,12 +14,7 @@ const transporter = nodemailer.createTransport({
     pass: pass,
   },
 });
-export async function sendGmail(
-  email: string,
-  subject: string,
-  data: any,
-  emailTemplate?: any
-) {
+export async function sendGmail(email: string,subject: string,data: any,emailTemplate?: any) {
   const bookingMailOptions = {
     from: process.env.EMAIL,
     to: email,
@@ -27,12 +22,11 @@ export async function sendGmail(
     html: emailTemplate(data),
   };
   transporter.sendMail(bookingMailOptions, (error, info) => {
-    if (error) {
+    if (error) { 
       console.log(error);
-      //   return h.response({ message: 'Error sending email' }).code(500);
+
     } else {
       console.log("Email sent: " + info.response);
-      //   return h.response({ message:USERMSG.OTP_SEND}).code(200);
     }
   });
 }
@@ -58,11 +52,7 @@ export async function sendRecipient(email: string, filepath: any) {
   }
 }
 
-export async function sendOffersMail(
-  email: string,
-  subject: string,
-  data: string
-) {
+export async function sendOffersMail(email: string,subject: string,data: string) {
   const bookingMailOptions = {
     from: process.env.EMAIL,
     to: email,

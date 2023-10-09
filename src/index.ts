@@ -3,17 +3,23 @@
 import Hapi from '@hapi/hapi';
 import { connectToDatabase } from './db/connection';
 import { user_routes} from './routes/userRoutes';
-import { Hotelroutes} from './routes/hotelRoutes';
+import { Hotelroutes} from './routes/hotel.Routes';
 import { createClient } from 'redis';
-import { Adminroutes } from './routes/adminRoutes';
+import { Adminroutes } from './routes/admin.Routes';
 import dotenv from 'dotenv';
-import { creatAdmin } from './controller/adminController';
+import { creatAdmin } from './controller/admin.Controller';
 import hapiswagger from 'hapi-swagger';
 import inert from '@hapi/inert';
 import vision from '@hapi/vision';
-import { Authroutes } from './routes/authRoutes';
+import { Authroutes } from './routes/auth.Routes';
 import * as HapiAuthCookie from '@hapi/cookie';
 import { Paymentroutes } from './routes/paymentRoute';
+import { hotel_service } from './services/hotel.service';
+import { Client } from '@elastic/elasticsearch';
+const elastic_client = new Client({
+  node: 'http://localhost:9200', // Replace with your Elasticsearch server's URL
+});
+
 
 
 dotenv.config();
@@ -31,11 +37,11 @@ client.connect();
 
 async function init() {
 
-    const server = Hapi.server({port: 3000,host: 'localhost',});
+    const server = Hapi.server({port: PORT,host: 'localhost',});
     await creatAdmin();
     await server.register([inert, vision, { plugin: hapiswagger, options:
          { info:
-            { title: 'API Documentation', version: '1.0.0', }, 
+            { title: 'API Documentation of Hotel Booking application', version: '1.0.0', }, 
             securityDefinitions: { apiKey: { type: 'apiKey', name: 'Authorization', in: 'header' } },
              security: [{ apiKey: [] }], 
              grouping: 'tags',
@@ -51,13 +57,7 @@ async function init() {
        
     await server.register(require('@hapi/cookie'));
     await server.register(require('@hapi/bell'));
-  
-
-   
-
-
- 
-
+    
 
     server.route(user_routes);
     server.route(Authroutes)
@@ -65,7 +65,44 @@ async function init() {
     server.route(Adminroutes);
     server.route(Paymentroutes);
     await server.start();
-    console.log('Server running on %s', server.info.uri);
+    console.log(process.env.ENV)
+    console.log('Server running at on', server.info.uri);
+
+    async function createHotelIndex() {
+      await elastic_client.indices.create({
+        index: 'myhotel',
+        body: {
+          mappings: {
+            properties: {
+              name: {
+                type: 'text',
+                analyzer: 'custom_edge_ngram',
+              },
+              // Add other properties as needed
+            },
+          },
+          settings: {
+            analysis: {
+              tokenizer: {
+                custom_edge_ngram: {
+                  type: 'edge_ngram',
+                  min_gram: 1,
+                  max_gram: 25,
+                  token_chars: ['letter', 'digit'],
+                },
+              },
+              analyzer: {
+                custom_edge_ngram: {
+                  type: 'custom',
+                  tokenizer: 'custom_edge_ngram',
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+    // await createHotelIndex()
 }
 process.on('unhandledRejection', (err) => {
 
@@ -74,3 +111,5 @@ process.on('unhandledRejection', (err) => {
 });
 
 init();
+
+

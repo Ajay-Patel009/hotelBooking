@@ -65,7 +65,8 @@ export const user_routes: ServerRoute[] = [
             pre: [{method: authenticateJWT},{method:session}],
             validate:{
                 payload:Joi.object({
-                    currentPassword:Joi.string().regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+])[A-Za-z0-9!@#$%^&*()_+]{8,}$/).required(),
+                    currentPassword:Joi.string().required(),
+                    // currentPassword:Joi.string().regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+])[A-Za-z0-9!@#$%^&*()_+]{8,}$/).required(),
                     newPassword:Joi.string().regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+])[A-Za-z0-9!@#$%^&*()_+]{8,}$/).required(),
                     confirmPassword:Joi.string().regex(/^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*()_+])[A-Za-z0-9!@#$%^&*()_+]{8,}$/).required(),
                 }),
